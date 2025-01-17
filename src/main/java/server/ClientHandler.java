@@ -1,7 +1,7 @@
 package server;
 
-import client.GameProtocol;
-import client.Player;
+import utils.GameProtocol;
+import entity.Player;
 import shared.Maze;
 import java.io.*;
 import java.net.Socket;
@@ -86,10 +86,28 @@ public class ClientHandler implements Runnable {
             handleMove(message.substring(GameProtocol.MOVE_PREFIX.length()));
         } else if (message.startsWith(GameProtocol.PICKUP_PREFIX)) {
             handlePickup();
+        } else if (message.equals(GameProtocol.PLACE_TRAP)) { // Добавляем проверку команды PLACE_TRAP
+            handlePlaceTrap(); // Вызываем метод обработки установки ловушки
         } else {
             out.println("Unknown command.");
             out.flush();
         }
+    }
+    private void handlePlaceTrap() {
+        int playerX = player.getX();
+        int playerY = player.getY();
+
+        if (player.getCoins() >= 3) { // Проверка, достаточно ли монет
+            if (maze.placeTrap(playerX, playerY)) { // Установить ловушку через метод Maze
+                player.useCoins(3); // Списать монеты у игрока
+                out.println("Trap placed! Remaining coins: " + player.getCoins());
+            } else {
+                out.println("Cannot place a trap here. Cell is not empty.");
+            }
+        } else {
+            out.println("Not enough coins to place a trap.");
+        }
+        out.flush(); // Обновить клиент
     }
 
     private void handleMove(String direction) {
@@ -118,10 +136,21 @@ public class ClientHandler implements Runnable {
         System.out.println("Новые Х и Y: " + newX + ", " + newY);
 
         if (maze.isWalkable(newX, newY)) {
-            player.setPosition(newX, newY);
-            out.println(GameProtocol.playerPositionResponse(newX, newY));
-            out.flush();
-            System.out.println("Player moved to: " + direction + "," + newX + ", " + newY);
+            boolean not_trapped = true;
+            if (activateTrap(player, newX, newY)) {
+                not_trapped = false;
+                out.println("You stepped on a trap! Returning to start...");
+            } else if (collectCoin(player, newX, newY)) {
+                out.println("You picked up a coin! Total coins: " + player.getCoins());
+            } else if (checkTrophy(newX, newY)) {
+                out.println("You found the trophy! You win!");
+            }
+            if (not_trapped) {
+                player.setPosition(newX, newY);
+                out.println(GameProtocol.playerPositionResponse(newX, newY));
+                System.out.println("Player moved to: " + direction + "," + newX + ", " + newY);
+                out.flush();
+            }
         } else {
             out.println("Move blocked. You hit a wall.");
             out.flush();
@@ -129,6 +158,37 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    public boolean collectCoin(Player player, int x, int y) {
+        if (maze.isCoin(x, y)) {
+            player.addCoins(1);
+            maze.clearCell(x, y); // Очищаем клетку
+            sendUpdateToClient(x, y);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean activateTrap(Player player, int x, int y) {
+        if (maze.isTrap(x, y)) {
+            // Например, возвращаем игрока на начальную позицию
+            player.setPosition(maze.getStartX(), maze.getStartY());
+            out.println(GameProtocol.playerPositionResponse(maze.getStartX(), maze.getStartY()));
+            maze.clearCell(x, y); // Убираем ловушку
+            sendUpdateToClient(x, y);
+            out.flush();
+            return true;
+        }
+        return false;
+    }
+
+    private void sendUpdateToClient(int x, int y) {
+        out.println(GameProtocol.clearCellResponse(x, y));
+    }
+
+
+    public boolean checkTrophy(int x, int y) {
+        return maze.isTrophy(x, y);
+    }
 
     private void handlePickup() {
         // Заглушка: можно расширить для обработки предметов.

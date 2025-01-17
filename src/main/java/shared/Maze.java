@@ -30,6 +30,9 @@ public class Maze {
         // Создание путей
         Random random = new Random();
         carvePath(1, 1, random);
+        placeItems(2, 20); // 20 монет
+        placeItems(3, 10);
+        placeItems(4, 1); // Один кубок
     }
 
     private void carvePath(int x, int y, Random random) {
@@ -41,10 +44,18 @@ public class Maze {
             // Вычисляем координаты следующей клетки на 2 шага вперёд
             int nx = x, ny = y;
             switch (direction) {
-                case 0: nx = x - 2; break; // вверх
-                case 1: ny = y + 2; break; // вправо
-                case 2: nx = x + 2; break; // вниз
-                case 3: ny = y - 2; break; // влево
+                case 0:
+                    nx = x - 2;
+                    break; // вверх
+                case 1:
+                    ny = y + 2;
+                    break; // вправо
+                case 2:
+                    nx = x + 2;
+                    break; // вниз
+                case 3:
+                    ny = y - 2;
+                    break; // влево
             }
 
             // Проверяем, можно ли пробить стену
@@ -57,6 +68,30 @@ public class Maze {
         }
     }
 
+    public boolean placeTrap(int x, int y) {
+        if (maze[x][y] == 0) { // Проверяем, что клетка пустая
+            maze[x][y] = 3; // Устанавливаем ловушку
+            return true;
+        }
+        return false; // Ловушку нельзя установить
+    }
+
+    public boolean isCoin(int x, int y) {
+        return maze[y][x] == 2;
+    }
+
+    public boolean isTrap(int x, int y) {
+        return maze[y][x] == 3;
+    }
+
+    public boolean isTrophy(int x, int y) {
+        return maze[y][x] == 4;
+    }
+
+    public void clearCell(int x, int y) {
+        maze[y][x] = 0;
+    }
+
     private void shuffleArray(int[] array, Random random) {
         for (int i = array.length - 1; i > 0; i--) {
             int index = random.nextInt(i + 1);
@@ -67,7 +102,7 @@ public class Maze {
     }
 
     public boolean isWalkable(int x, int y) {
-        return isInBounds(y, x) && maze[y][x] == 0; // Ячейка проходима, если в границах и равна 0
+        return isInBounds(y, x) && maze[y][x] == 0 || maze[y][x] == 2 || maze[y][x] == 3 || maze[y][x] == 4; // Ячейка проходима, если в границах и равна 0
     }
 
     private boolean isInBounds(int y, int x) {
@@ -93,12 +128,43 @@ public class Maze {
         return 0; // По умолчанию (если не найдена проходимая точка)
     }
 
+    private void placeItems(int itemType, int count) {
+        int placed = 0;
+        while (placed < count) {
+            int x = random.nextInt(rows);
+            int y = random.nextInt(cols);
+            if (maze[x][y] == 0) { // Только на проходной клетке
+                maze[x][y] = itemType;
+                placed++;
+            }
+        }
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         for (int[] row : maze) {
             for (int cell : row) {
-                sb.append(cell == 1 ? "#" : ".");
+                // Стены отображаются как #
+                if (cell == 1) {
+                    sb.append("#");
+                }
+                // Проходы отображаются как .
+                else if (cell == 0) {
+                    sb.append(".");
+                }
+                // Монетки отображаются как M
+                else if (cell == 2) {
+                    sb.append("M");
+                }
+                // Ловушки отображаются как T
+                else if (cell == 3) {
+                    sb.append("T");
+                }
+                // Кубки отображаются как C
+                else if (cell == 4) {
+                    sb.append("C");
+                }
             }
             sb.append("\n");
         }

@@ -12,7 +12,7 @@ public class MazeGame {
         MazeClient client = new MazeClient("localhost", 12345, gameUI);
 
         frame.add(gameUI);
-        frame.setSize(600, 600);
+        frame.setSize(750, 778);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
 

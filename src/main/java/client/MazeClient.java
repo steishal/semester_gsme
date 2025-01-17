@@ -1,5 +1,7 @@
 package client;
 
+import utils.GameProtocol;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -71,7 +73,27 @@ public class MazeClient {
                     return;
                 }
                 for (int j = 0; j < lines[i].length(); j++) {
-                    maze[i][j] = (lines[i].charAt(j) == '#') ? 1 : 0;  // Преобразуем # в 1 и . в 0
+                    char cell = lines[i].charAt(j);
+                    switch (cell) {
+                        case '#':
+                            maze[i][j] = 1; // Стена
+                            break;
+                        case '.':
+                            maze[i][j] = 0; // Проход
+                            break;
+                        case 'M':
+                            maze[i][j] = 2; // Монетка
+                            break;
+                        case 'T':
+                            maze[i][j] = 3; // Ловушка
+                            break;
+                        case 'C':
+                            maze[i][j] = 4; // Кубок
+                            break;
+                        default:
+                            maze[i][j] = 0; // По умолчанию - проход
+                            break;
+                    }
                 }
             }
             gameUI.setMaze(maze);  // Обновляем UI новым лабиринтом
@@ -84,7 +106,7 @@ public class MazeClient {
                     return;
                 }
 
-                String[] parts = positionData.split("\\s+");  // Убедимся, что разделители — любые пробелы
+                String[] parts = positionData.split("\\s+");
                 if (parts.length != 2) {
                     System.err.println("Invalid format: Expected two values but found " + parts.length);
                     return;
@@ -96,9 +118,31 @@ public class MazeClient {
                 gameUI.updatePlayerPosition(x, y);  // Обновление UI с позицией игрока
             } catch (NumberFormatException e) {
                 System.err.println("Invalid number format for position: " + e.getMessage());
-            } catch (ArrayIndexOutOfBoundsException e) {
-                System.err.println("Invalid position format: " + e.getMessage());
             }
+        } else if (message.startsWith(GameProtocol.CLEAR_CELL)) {
+            // Обработка команды CLEAR_CELL
+            try {
+                String positionData = message.substring(GameProtocol.CLEAR_CELL.length()).trim();
+                if (positionData.isEmpty()) {
+                    System.err.println("Position data is empty.");
+                    return;
+                }
+
+                String[] parts = positionData.split("\\s+");
+                if (parts.length != 2) {
+                    System.err.println("Invalid format: Expected two values but found " + parts.length);
+                    return;
+                }
+
+                int clearX = Integer.parseInt(parts[0].trim());
+                int clearY = Integer.parseInt(parts[1].trim());
+
+                gameUI.clearCell(clearX, clearY); // Обновляем UI, очищая клетку
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid number format in CLEAR_CELL: " + e.getMessage());
+            }
+        } else {
+            System.err.println("Unknown command received: " + message);
         }
     }
 

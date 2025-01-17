@@ -1,6 +1,6 @@
 package server;
 
-import client.Player;
+import entity.Player;
 import shared.Maze;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentMap;
 public class MazeServer {
     public static void main(String[] args) {
         int port = 12345;
-        Maze maze = new Maze(20, 20); // Создаем лабиринт 20x20
+        Maze maze = new Maze(25, 25); // Создаем лабиринт 20x20
         System.out.println(maze);
         ConcurrentMap<String, Player> players = new ConcurrentHashMap<>();
 
